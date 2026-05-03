@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOLTMASTER PRO v1.8.16 | ELECTRICAL DESIGN SUITES</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root { --bg:#020617; --card:#111827; --accent:#22c55e; --text:#94a3b8; --border:#334155; --pro:#f59e0b; --err:#ef4444; --warn:#f97316;}
+body{margin:0;font-family: Arial, sans-serif;background:var(--bg);color:white;padding-bottom:50px;}
+header{text-align:center;padding:25px;background:#0f172a;border-bottom:4px solid var(--pro);}
+header h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
+header p { margin: 5px 0 0; color: var(--pro); font-weight: bold; font-size: 0.8rem; text-transform: uppercase;}
+.badge{background:var(--pro);color:#020617;padding:2px 8px;border-radius:4px;font-size:0.7rem;margin-left:8px;}
+.container{max-width:1100px;margin:auto;padding:10px;}
+.card{background:var(--card);padding:15px;border-radius:12px;margin-top:15px;border:1px solid var(--border);}
+h3{margin-top:0;color:var(--accent);font-size:1rem;border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:10px;}
+.grid{display:grid;grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));gap:10px;margin-bottom:10px;}
+input,select{width:100%;padding:8px;background:#0f172a;color:white;border:1px solid var(--border);border-radius:4px;box-sizing: border-box;font-size:0.85rem;transition:0.2s;}
+input.error{border:2px solid var(--err);background:#7f1d1d;}
+button{width:100%;padding:15px;margin-top:15px;background:var(--accent);border:none;font-weight:bold;cursor:pointer;border-radius:4px;font-size:1rem;color:#020617;transition: 0.3s;}
+button:disabled {background:#334155; color:#94a3b8; cursor:not-allowed;}
+.result{white-space:pre-wrap;margin-top:20px;background:#000;padding:25px;display:none;border-radius:8px;font-family: 'Courier New', monospace;font-size:0.85rem;border:1px solid var(--accent);line-height:1.4;}
+label{font-size:0.7rem;color:var(--text);display:block;margin-bottom:3px;}
+.settings-panel { background: #1e293b; padding: 15px; border-radius: 8px; border-left: 4px solid var(--pro); margin-top: 15px; }
+.ac-group { border: 1px dashed var(--border); padding: 8px; border-radius: 4px; margin-top: 5px; }
+.validation-msg { background: #7f1d1d; border: 2px solid #ef4444; color: #fecaca; padding: 12px; border-radius: 6px; margin-top: 15px; display: none; font-size: 0.85rem; font-weight: 600;}
+.tooltip { position: relative; display: inline-block; cursor: help; color: var(--pro); margin-left: 5px; font-weight: bold; }
+.tooltip.tooltiptext { visibility: hidden; width: 200px; background-color: #1e293b; color: #fff; text-align: center; border-radius: 6px; padding: 5px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -100px; opacity: 0; transition: opacity 0.3s; border: 1px solid var(--pro); font-size: 0.7rem; font-weight: normal; }
+.tooltip:hover.tooltiptext { visibility: visible; opacity: 1; }
+.validation-pass { background: rgba(34, 197, 94, 0.1); border: 1px solid var(--accent); color: var(--accent); padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 0.8rem; display: none; }
+.legal-box { background: rgba(245, 158, 11, 0.1); border: 1px solid var(--pro); padding: 15px; border-radius: 8px; margin-top: 20px; display: flex; align-items: flex-start; gap: 10px;}
+.legal-box input { width: 20px; height: 20px; cursor: pointer; margin-top: 2px;}
+.legal-box label { font-size: 0.8rem; color: #fff; line-height: 1.4; cursor: pointer;}
+.vd-fail { color: var(--err); font-weight: bold; }
+.vd-warn { color: var(--warn); font-weight: bold; }
+.db-layout { display:grid; grid-template-columns: repeat(6, 1fr); gap:4px; margin-top:10px; background:#0f172a; padding:10px; border-radius:4px; }
+.db-way { background:#1e293b; border:1px solid #334155; padding:6px; text-align:center; font-size:0.7rem; border-radius:3px; }
+.db-way.r { border-left:3px solid #ef4444; }
+.db-way.y { border-left:3px solid #f59e0b; }
+.db-way.b { border-left:3px solid #3b82f6; }
+.db-way.spare { background:#0f172a; color:#64748b; }
+.bom-table { width:100%; margin-top:10px; border-collapse:collapse; font-size:0.8rem; }
+.bom-table th,.bom-table td { border:1px solid var(--border); padding:6px; text-align:left; }
+.bom-table th { background:#1e293b; color:var(--accent); }
+.kw-highlight { font-weight:bold; font-size:1.1em; color:var(--pro); }
+
+#dbScheduleTable {
+  display: block;
+  width: 100%;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background: #0f172a;
+  padding: 15px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: #e2e8f0;
+}
+
+#sldPreview {
+  display: none;
+  width: 100%;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre;
+  background: #0f172a;
+  padding: 15px;
+  border-radius: 4px;
+  border: 1px solid var(--accent);
+  color: #e2e8f0;
+  overflow-x: auto;
+  margin-top: 15px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  #dbScheduleTable { font-size: 11px; padding: 10px; }
+ .db-layout { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+<header>
+    <h1>VOLTMASTER PRO <span class="badge">v1.8.16 PRO COMPLIANCE++</span></h1>
+    <p>MS IEC 60364 / BS7671 Professional Compliance Suite</p>
+</header>
+<div class="container">
+    <div class="card">
+        <h3>1. Project & Branding</h3>
+        <div class="grid">
+            <div><label>Company Name</label><input id="compName" placeholder="Volt Solutions Sdn Bhd" type="text"></div>
+            <div><label>Prepared By</label><input id="prepBy" placeholder="Firdaus" type="text"></div>
+            <div><label>Project Ref</label><input id="projRef" placeholder="PROJ/2026/001" type="text"></div>
+        </div>
+    </div>
+    <div class="settings-panel">
+        <h3 style="color:var(--pro); border-color:var(--pro)">Pro Setting: Dynamic Pricing (RM)</h3>
+        <div class="grid">
+            <div><label>Light/Fan Pt</label><input id="rateL" value="85" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Exhaust Fan Pt</label><input id="rateEF" value="95" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Socket Point</label><input id="rateS" value="160" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Aircond Point</label><input id="rateAC" value="250" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Water Heater Pt</label><input id="rateWH" value="280" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Outdoor Light Pt</label><input id="rateOL" value="120" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>DB Base Rate</label><input id="rateDB" value="650" type="number" min="0" oninput="validateInput()"></div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>2. System Configuration</h3>
+        <div class="grid">
+            <div><label>Supply System</label><select id="phaseType" onchange="validateInput()"><option value="1">1-Phase (230V)</option><option value="3">3-Phase (400V)</option></select></div>
+            <div><label>Diversity (DF)</label><input id="pDF" value="Auto" disabled style="background:#0f172a; color:var(--pro); font-weight:bold;"></div>
+            <div><label>Power Factor <span class="tooltip">?<span class="tooltiptext">Typical: 0.85 for Residential, 0.90+ for Commercial with Cap Bank</span></span></label><input id="pPF" value="0.85" step="0.05" min="0.5" max="1.0" type="number" oninput="validateInput()"></div>
+            <div><label>Non-linear Load % <span class="tooltip">?<span class="tooltiptext">LED, PC, Inverter. >33% requires neutral derating per BS7671 523.6.3</span></span></label><input id="pHarmonics" value="30" type="number" min="0" max="100" oninput="validateInput()"></div>
+            <div><label>Wiring Style</label><select id="wireStyle"><option value="conduit">High Impact Conduit (ST Std)</option><option value="concealed">Concealed Wiring</option><option value="trunking">Steel Trunking</option></select></div>
+            <div><label>Install Method <span class="tooltip">?<span class="tooltiptext">BS7671 Table 4D1A. Affects Iz rating</span></span></label><select id="installMethod" onchange="validateInput()">
+                <option value="C">Method C - Clipped Direct</option>
+                <option value="B">Method B - Conduit in Wall</option>
+                <option value="A">Method A - Conduit in Insulated Wall</option>
+                <option value="E">Method E - Cable Tray</option>
+                <option value="D">Method D - Buried Direct</option>
+            </select></div>
+        </div>
+        <div class="grid">
+            <div><label>Protection Mode <span class="tooltip">?<span class="tooltiptext">RCBO = Combined MCB+RCD. Better discrimination vs MCB+RCD separate</span></label>
+                <select id="protectionMode">
+                    <option value="mcb_rcd">MCB + RCD Separate</option>
+                    <option value="rcbo">RCBO Full Mode</option>
+                    <option value="hybrid">Hybrid - Socket RCBO Only</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>3. Load Quantities</h3>
+        <div class="grid">
+            <div><label>Lighting</label><input id="qL" value="10" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Ceiling Fan</label><input id="qF" value="5" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Exhaust Fan</label><input id="qEF" value="0" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Socket Pts</label><input id="qS" value="12" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Water Heater</label><input id="qWH" value="1" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Outdoor Light</label><input id="qOL" value="2" type="number" min="0" oninput="validateInput()"></div>
+        </div>
+        <div class="grid">
+            <div class="ac-group">
+                <label>AC 1 (HP)</label><input id="hp1" value="1.0" step="0.5" min="0" type="number" oninput="validateInput()">
+                <label>Qty</label><input id="qty1" value="1" min="0" type="number" oninput="validateInput()">
+                <label>Type</label><select id="acType1"><option value="inv">Inverter</option><option value="dol">Non-Inverter DOL</option></select>
+            </div>
+            <div class="ac-group">
+                <label>AC 2 (HP)</label><input id="hp2" value="1.5" step="0.5" min="0" type="number" oninput="validateInput()">
+                <label>Qty</label><input id="qty2" value="0" min="0" type="number" oninput="validateInput()">
+                <label>Type</label><select id="acType2"><option value="inv">Inverter</option><option value="dol">Non-Inverter DOL</option></select>
+            </div>
+            <div class="ac-group">
+                <label>AC 3 (HP)</label><input id="hp3" value="2.5" step="0.5" min="0" type="number" oninput="validateInput()">
+                <label>Qty</label><input id="qty3" value="0" min="0" type="number" oninput="validateInput()">
+                <label>Type</label><select id="acType3"><option value="inv">Inverter</option><option value="dol">Non-Inverter DOL</option></select>
+            </div>
+        </div>
+    </div>
+   <div class="card">
+        <h3>4. Technical Parameters</h3>
+        <div class="grid">
+            <div><label>Earthing System</label><select id="earthType"><option value="TT">TT (Standard Malaysia)</option><option value="TN-S">TN-S</option><option value="TN-C-S">TN-C-S (PME)</option></select></div>
+            <div><label>Earth Resistance (ohms)</label><input id="earthRes" value="1.0" type="number" step="0.1" min="0" oninput="validateInput()"></div>
+            <div><label>Main MCB Curve</label><select id="mcbType"><option value="B">Type B</option><option value="C" selected>Type C</option><option value="D">Type D</option></select></div>
+            <div><label>Ze L-N (ohms)</label><input id="zeLN" value="0.35" type="number" step="0.01" min="0" oninput="validateInput()"></div>
+            <div><label>TNB Fault Level (kA) <span class="tooltip">?<span class="tooltiptext">Check with TNB. Domestic 6kA, Commercial 10kA+</span></span></label><input id="tnbFault" value="6" type="number" step="0.5" min="1" oninput="validateInput()"></div>
+        </div>
+        <div class="grid">
+            <div><label>Light (W)/unit</label><input id="wL" value="15" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Fan (W)/unit</label><input id="wF" value="75" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Exhaust (W)/unit</label><input id="wEF" value="40" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Socket (W)/pt</label><input id="wS" value="250" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Heater (W)/unit</label><input id="wWH" value="3000" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>Outdoor Light (W)/unit</label><input id="wOL" value="15" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>AC Efficiency (0-1)</label><input id="acEff" value="0.85" type="number" step="0.05" min="0.5" max="1.0" oninput="validateInput()"></div>
+            <div><label>TNB to DB (m)</label><input id="cLenMain" value="10" type="number" min="0" oninput="validateInput()"></div>
+            <div><label>DB to Point (m)</label><input id="cLen" value="20" type="number" min="0" oninput="validateInput()"></div>
+        </div>
+        <div class="grid">
+            <div><label>Socket Mode</label><select id="pS">
+                <option value="10">Ring Main (2.5mm² Cable / 32A MCB)</option>
+                <option value="2">Radial (4.0mm² Cable / 20A MCB)</option>
+                <option value="2.5">Radial (2.5mm² Cable / 20A MCB)</option>
+            </select></div>
+            <div><label>Ring Load Dist</label><select id="ringLoad"><option value="2.5">Mid-Point (Conservative)</option><option value="2.0">End-Point (Worst)</option><option value="4.0">Distributed</option></select></div>
+            <div><label>Ambient Temp Ca</label><select id="derateCa"><option value="1.03">30°C</option><option value="1.0" selected>35°C</option><option value="0.94">40°C</option><option value="0.87">45°C</option></select></div>
+            <div><label>Grouping Cg</label><select id="derateCg"><option value="1.0">1 Circuit</option><option value="0.8" selected>2-3 Circuits</option><option value="0.7">4-5 Circuits</option><option value="0.65">6+ Circuits</option></select></div>
+                <div><label>Insulation Ci</label><select id="derateCi"><option value="1.0" selected>No</option><option value="0.75">Yes >500mm</option><option value="0.5">Yes <500mm</option></select></div>
+        </div>
+        <div class="grid">
+            <div><label>DB Type</label><select id="dbType"><option value="surface">Surface Mount</option><option value="flush">Flush Mount</option></select></div>
+            <div><label>DB Location</label><select id="dbLocation"><option value="indoor">Indoor IP30</option><option value="outdoor">Outdoor IP55</option><option value="wet">Wet Area IP65</option></select></div>
+            <div><label>DB Brand</label><select id="dbBrand"><option value="generic">Generic</option><option value="schneider">Schneider Electric</option><option value="hager">Hager</option><option value="abb">ABB</option></select></div>
+        </div>
+
+        <div class="legal-box">
+            <input type="checkbox" id="legalCheck" onchange="validateInput()">
+            <label for="legalCheck"><b>DISCLAIMER & LIABILITY WAIVER:</b> I acknowledge that this software provides PRELIMINARY DESIGN ESTIMATIONS based on MS 1979 / BS 7671 / MS IEC 60364. It does NOT serve as an official construction drawing or certified engineering endorsement. Final designs MUST be verified, tested, and legally endorsed by a registered Competent Person (Wireman PW4 / Electrical Engineer) prior to installation. Fault current & Zs calculations are ESTIMATED only per IEC 60909 simplified method and EXCLUDE transformer impedance, service cable impedance, and asymmetrical fault components. The developer holds zero legal liability for any design faults.</label>
+        </div>
+
+        <div id="vMsg" class="validation-msg"></div>
+        <button id="genBtn" disabled onclick="calc()">GENERATE PRELIMINARY DESIGN REPORT</button>
+        <div id="out" class="result"></div>
+        <div id="dbLayoutPreview" style="display:none; margin-top:15px;"></div>
+        <div id="dbScheduleTable" style="display:none;"></div>
+        <div id="bomTable" style="display:none; margin-top:15px;"></div>
+        <div id="sldPreview"></div>
+        <button id="sldPdfBtn" style="background:#1e293b; color:#22c55e; border:2px solid #22c55e; display:none; margin-top:10px;" onclick="exportSLDPdf()">EXPORT SLD DRAWING (PDF)</button>
+        <button id="pdfBtn" style="background:#334155;color:white;display:none;margin-top:10px;" onclick="pdf()">EXPORT MULTI-PAGE PDF REPORT</button>
+        <button id="resetBtn" style="background:var(--err);color:white;margin-top:10px;" onclick="resetBorang()">START NEW PROJECT (RESET)</button>
+    </div>
+</div>
+<script>
+const VOLT_1PH = 230;
+const VOLT_3PH = 400;
+const HP_TO_WATT = 746;
+const breakers = [6,10,16,20,25,32,40,50,63,80,100,125];
+const mvAM_1ph = { "1.5": 29, "2.5": 18, "4.0": 11, "6.0": 7.3, "10.0": 4.4, "16.0": 2.8, "25.0": 1.8, "35.0": 1.35 };
+const mvAM_3ph = { "1.5": 25, "2.5": 15, "4.0": 9.5, "6.0": 6.4, "10.0": 3.8, "16.0": 2.4, "25.0": 1.5, "35.0": 1.15 };
+const resCu = { "1.5": 12.10, "2.5": 7.41, "4.0": 4.61, "6.0": 3.08, "10.0": 1.83, "16.0": 1.15, "25.0": 0.727, "35.0": 0.524 };
+const zsTable = {
+    "B": {6:7.67,10:4.60,16:2.87,20:2.30,25:1.84,32:1.44,40:1.15,50:0.92,63:0.73},
+    "C": {6:3.83,10:2.30,16:1.44,20:1.15,25:0.92,32:0.72,40:0.57,50:0.46,63:0.36},
+    "D": {6:1.92,10:1.15,16:0.72,20:0.57,25:0.46,32:0.36,40:0.29,50:0.23,63:0.18}
+};
+const izTableMethod = {
+    "A": { "1.5": 15.5, "2.5": 21, "4.0": 28, "6.0": 36, "10.0": 50, "16.0": 68, "25.0": 89, "35.0": 110 },
+    "B": { "1.5": 17.5, "2.5": 24, "4.0": 32, "6.0": 41, "10.0": 57, "16.0": 76, "25.0": 101, "35.0": 125 },
+    "C": { "1.5": 19.5, "2.5": 27, "4.0": 36, "6.0": 46, "10.0": 63, "16.0": 85, "25.0": 112, "35.0": 138 },
+    "D": { "1.5": 22, "2.5": 29, "4.0": 37, "6.0": 46, "10.0": 61, "16.0": 79, "25.0": 101, "35.0": 122 },
+    "E": { "1.5": 22, "2.5": 30, "4.0": 40, "6.0": 52, "10.0": 71, "16.0": 96, "25.0": 119, "35.0": 147 }
+};
+
+let dbScheduleData = [];
+let globalCalcData = {};
+let bomData = [];
+
+function getInputValue(id) {
+    const el = document.getElementById(id);
+    if (!el || el.value === "") return NaN;
+    const val = parseFloat(el.value);
+    return Number.isFinite(val)? val : NaN;
+}
+
+function validateInput() {
+    const vMsg = document.getElementById('vMsg');
+    const genBtn = document.getElementById('genBtn');
+    let errors = [];
+    let isDataValid = true;
+
+    document.querySelectorAll('input[type="number"]').forEach(inp => {
+        inp.classList.remove('error');
+        if (inp.value === "") {
+            errors.push(`ERROR: Input ${inp.id} is empty. Please enter a value.`);
+            isDataValid = false;
+            inp.classList.add('error');
+            return;
+        }
+        const val = parseFloat(inp.value);
+        if (!Number.isFinite(val)) {
+            errors.push(`ERROR: Invalid number in ${inp.id}.`);
+            isDataValid = false;
+            inp.classList.add('error');
+        } else if (val < 0) {
+            errors.push(`ERROR: Negative value detected in ${inp.id}.`);
+            isDataValid = false;
+            inp.classList.add('error');
+        }
+    });
+
+    const pf = getInputValue('pPF');
+    if (isNaN(pf) || pf < 0.5 || pf > 1.0) {
+        errors.push("ERROR: Power Factor must be between 0.5 and 1.0.");
+        isDataValid = false;
+        document.getElementById('pPF').classList.add('error');
+    }
+
+    const acEff = getInputValue('acEff');
+    if (isNaN(acEff) || acEff < 0.5 || acEff > 1.0) {
+        errors.push("ERROR: AC Efficiency must be between 0.5 and 1.0.");
+        isDataValid = false;
+        document.getElementById('acEff').classList.add('error');
+    }
+
+    const lenMain = getInputValue('cLenMain');
+    const len = getInputValue('cLen');
+
+    if(!isNaN(lenMain) &&!isNaN(len) && (lenMain + len) > 65) {
+        errors.push("WARNING: Total cable length (TNB to Point) > 65m. Potential Cumulative Voltage Drop violation (>4%).");
+    }
+
+    const isChecked = document.getElementById('legalCheck').checked;
+
+    if(errors.length > 0) {
+        vMsg.className = "validation-msg";
+        vMsg.style.display = "block";
+        vMsg.innerHTML = "<b>⚠️ SYSTEM ALERTS:</b><br>" + errors.map(e => "• " + e).join("<br>");
+    } else {
+        vMsg.className = "validation-pass";
+        vMsg.style.display = "block";
+        vMsg.innerHTML = "<b>✅ SYSTEM CHECK:</b> Parameters within logical bounds.";
+    }
+
+    genBtn.disabled =!isDataValid ||!isChecked;
+}
+
+function getACSpecs(hp, type) {
+    let startFactor = 1.0;
+    let mcbCurveReq = "C";
+    if (type === "dol") {
+        if (hp >= 2.5) {
+            startFactor = 6.0;
+            mcbCurveReq = "D";
+        } else if (hp >= 1.5) {
+            startFactor = 4.0;
+            mcbCurveReq = "D";
+        } else {
+            startFactor = 1.5;
+        }
+    }
+
+    if (hp <= 1.5) return { mcb: `${Math.ceil(16 * startFactor)}A`, cable: "2.5mm²", val: 2.5, curve: mcbCurveReq };
+    if (hp <= 2.5) return { mcb: `${Math.ceil(20 * startFactor)}A`, cable: "4.0mm²", val: 4.0, curve: mcbCurveReq };
+    return { mcb: `${Math.ceil(32 * startFactor)}A`, cable: "6.0mm²", val: 6.0, curve: mcbCurveReq };
+}
+
+function getContainmentSizing(cableSize, style) {
+    if (style === "concealed") return "";
+    if (cableSize <= 2.5) return style === "conduit"? "Rec. Conduit: 20mm (High Impact)" : "Rec. Trunking: 50x50mm (Steel)";
+    if (cableSize <= 6.0) return style === "conduit"? "Rec. Conduit: 25mm (High Impact)" : "Rec. Trunking: 75x75mm (Steel)";
+    return style === "conduit"? "Rec. Conduit: 32mm" : "Rec. Trunking: 100x100mm";
+}
+
+function checkCableAdequacy(cableSize, Ib) {
+    const method = document.getElementById('installMethod').value;
+    const Ca = getInputValue('derateCa');
+    const Cg = getInputValue('derateCg');
+    const Ci = getInputValue('derateCi');
+    const Iz_base = izTableMethod[method][cableSize.toFixed(1)] || 27;
+    const Iz = Iz_base * Ca * Cg * Ci;
+    return { Iz: Iz.toFixed(1), status: Ib <= Iz? "OK" : "UNDERSIZED", method: method };
+}
+
+function generateBOM() {
+    bomData = [];
+    let mcbCount = {}, rcdCount = {}, cableLength = {};
+    const lenMain = getInputValue('cLenMain');
+    const len = getInputValue('cLen');
+    const protectionMode = document.getElementById('protectionMode').value;
+    const phase = Number(document.getElementById('phaseType').value);
+
+    if (globalCalcData && globalCalcData.mainS) {
+        const phaseStr = phase === 1 ? "DP" : "TPN";
+        bomData.push({ item: `Main Switch ${globalCalcData.mainS}A ${phaseStr}`, qty: 1, unit: 'nos' });
+        
+        const mainRCDType = phase === 1 ? "2P" : "4P";
+        bomData.push({ item: `Main RCD ${mainRCDType} ${globalCalcData.mainS}A/100mA Type S`, qty: 1, unit: 'nos' });
+    }
+
+    globalCalcData.dbSchedule.forEach(cct => {
+        const mcbKey = `${cct.mcb} ${cct.curve || 'C'}`;
+        mcbCount[mcbKey] = (mcbCount[mcbKey] || 0) + 1;
+
+        let rcdType = "";
+        if (protectionMode === "rcbo") {
+            rcdType = "RCBO 30mA";
+        } else if (protectionMode === "hybrid") {
+            if (cct.label.includes("Socket") || cct.label.includes("Water Heater")) rcdType = cct.label.includes("Water Heater")? "RCBO 10mA" : "RCBO 30mA";
+        } else {
+            if (cct.label.includes("Socket")) rcdType = "RCD 30mA";
+            else if (cct.label.includes("Water Heater")) rcdType = "RCD 10mA";
+            else if (cct.label.includes("Outdoor")) rcdType = "RCD 30mA";
+        }
+        if(rcdType) rcdCount[rcdType] = (rcdCount[rcdType] || 0) + 1;
+
+        const cableKey = cct.cable;
+        cableLength[cableKey] = (cableLength[cableKey] || 0) + len;
+    });
+
+    const mainCabKey = `${globalCalcData.mainCab}mm²`;
+    cableLength[mainCabKey] = (cableLength[mainCabKey] || 0) + lenMain;
+
+    const earthCabKey = `${globalCalcData.earthCab}mm²`;
+    cableLength[earthCabKey] = (cableLength[earthCabKey] || 0) + lenMain;
+
+    Object.keys(mcbCount).forEach(key => {
+        bomData.push({ item: `MCB ${key}`, qty: mcbCount[key], unit: 'nos' });
+    });
+    Object.keys(rcdCount).forEach(key => {
+        bomData.push({ item: key, qty: rcdCount[key], unit: 'nos' });
+    });
+    Object.keys(cableLength).forEach(key => {
+        bomData.push({ item: `Cable ${key}`, qty: Math.ceil(cableLength[key] * 1.1), unit: 'm' });
+    });
+
+    const totalLen = lenMain + (len * globalCalcData.dbSchedule.length);
+    const wStyle = document.getElementById('wireStyle').value;
+    if(wStyle === 'conduit') {
+        bomData.push({ item: 'High Impact Conduit 20mm', qty: Math.ceil(totalLen * 1.1), unit: 'm' });
+    } else if(wStyle === 'trunking') {
+        bomData.push({ item: 'Steel Trunking 50x50mm', qty: Math.ceil(totalLen * 1.1), unit: 'm' });
+    }
+}
+
+function calc() {
+    try {
+        dbScheduleData = [];
+        bomData = [];
+        const phase = Number(getInputValue('phaseType'));
+        const wStyle = document.getElementById('wireStyle').value;
+        const lenMain = getInputValue('cLenMain');
+        const len = getInputValue('cLen');
+        const globalPF = getInputValue('pPF');
+        const acEff = getInputValue('acEff');
+        const wS = getInputValue('wS');
+        const harmonicPct = getInputValue('pHarmonics') / 100;
+        const mcbCurve = document.getElementById('mcbType').value;
+        const dbBrand = document.getElementById('dbBrand').value.toUpperCase();
+        const ringLoadFactor = parseFloat(document.getElementById('ringLoad').value) || 2.5;
+        const protectionMode = document.getElementById('protectionMode').value;
+
+        const getVdLine = (watt, cableVal, length, isRing = false, isResistive = false) => {
+            const activePF = isResistive? 1.0 : globalPF;
+            const iLine = watt / (VOLT_1PH * activePF);
+            const mvLine = mvAM_1ph[cableVal.toFixed(1)] || 29; 
+            let vdVal = (mvLine * iLine * length) / 1000;
+            if (isRing) vdVal = vdVal / ringLoadFactor;
+            const vdPct = (vdVal / VOLT_1PH) * 100;
+            return { v: vdVal.toFixed(2), pct: vdPct.toFixed(2), i: iLine.toFixed(2) };
+        };
+
+        const loadL = getInputValue('qL') * getInputValue('wL');
+        const loadF = getInputValue('qF') * getInputValue('wF');
+        const loadEF = getInputValue('qEF') * getInputValue('wEF');
+        const loadOL = getInputValue('qOL') * getInputValue('wOL');
+        const loadS = getInputValue('qS') * wS;
+        const loadWH = getInputValue('qWH') * getInputValue('wWH');
+
+        let acTotalW = 0, acQty = 0, acArray = [];
+        for(let i=1; i<=3; i++){
+            let h = getInputValue('hp'+i), q = getInputValue('qty'+i);
+            let type = document.getElementById('acType'+i).value;
+            if(q > 0 &&!isNaN(h) &&!isNaN(q)){
+                let w = (h * HP_TO_WATT) / acEff;
+                acTotalW += (w * q);
+                acQty += q;
+                for(let j=0; j<q; j++) acArray.push({watt: w, type: type, hp: h});
+            }
+        }
+
+        const tcl = loadL + loadF + loadEF + loadOL + loadS + loadWH + acTotalW;
+
+        const mdL = (loadL + loadF + loadEF + loadOL) * 0.66;
+
+        let mdS = 0;
+        if(getInputValue('qS') > 0) {
+            const ptsPerCct = getInputValue('pS');
+            const firstCctPts = Math.min(getInputValue('qS'), ptsPerCct);
+            const firstCctWatt = firstCctPts * wS;
+            const balanceWatt = loadS - firstCctWatt;
+            mdS = firstCctWatt + (balanceWatt * 0.4);
+        }
+
+        let fixedAppliances = [];
+        for(let i=0; i<getInputValue('qWH'); i++) {
+            if(i < 2) fixedAppliances.push(getInputValue('wWH'));
+            else fixedAppliances.push(getInputValue('wWH') * 0.25);
+        }
+        fixedAppliances = fixedAppliances.concat(acArray.map(a => a.watt)).sort((a,b) => b-a);
+
+        let mdFixed = 0;
+        fixedAppliances.forEach((watt, index) => { if(index < 2) mdFixed += watt; else mdFixed += (watt * 0.25); });
+
+        const MD = mdL + mdS + mdFixed;
+        const autoDF = (MD / (tcl||1)).toFixed(2);
+        document.getElementById('pDF').value = autoDF;
+
+        let phaseLoads = { R: 0, Y: 0, B: 0 };
+        let allCircuits = [];
+        let socketRCDTracker = {R: 0, Y: 0, B: 0};
+        let motorStartWarnings = [];
+
+        const queueCct = (qty, ptsPerCct, watt, label, mcb, cable, cableVal, type = "", df = 1.0, curveOverride = null) => {
+            if (qty <= 0) return;
+            const numCcts = Math.ceil(qty / (ptsPerCct || 1));
+            const loadPerCct = watt * (qty / numCcts) * df;
+            for(let i=0; i<numCcts; i++) allCircuits.push({ label, watt: loadPerCct, mcb, cable, cableVal, qty: qty/numCcts, type, fullWatt: watt * (qty/numCcts), curve: curveOverride });
+        };
+
+        queueCct(getInputValue('qL'), 10, getInputValue('wL'), "Lighting", "6A", "1.5mm²", 1.5, "", 0.66);
+        queueCct(getInputValue('qF'), 10, getInputValue('wF'), "Ceiling Fan", "10A", "1.5mm²", 1.5, "", 0.66);
+        queueCct(getInputValue('qEF'), 10, getInputValue('wEF'), "Exhaust Fan", "6A", "1.5mm²", 1.5, "", 0.66);
+        queueCct(getInputValue('qOL'), 10, getInputValue('wOL'), "Outdoor Light", "6A", "1.5mm²", 1.5, "", 0.66);
+
+        if(getInputValue('qS') > 0) {
+            const socketMode = getInputValue('pS');
+            const ptsPerCct = (socketMode == "10")? 10 : 2;
+            const sMCB = socketMode == "10"? "32A (Ring)" : "20A (Radial)";
+            const sCable = socketMode == "2"? "4.0mm²" : "2.5mm²";
+            const sCableVal = socketMode == "2"? 4.0 : 2.5;
+            const firstCctPts = Math.min(getInputValue('qS'), ptsPerCct);
+            queueCct(firstCctPts, ptsPerCct, wS, "Socket Outlet", sMCB, sCable, sCableVal, "socket", 1.0);
+            if(getInputValue('qS') > firstCctPts) {
+                queueCct(getInputValue('qS') - firstCctPts, ptsPerCct, wS, "Socket Outlet", sMCB, sCable, sCableVal, "socket", 0.4);
+            }
+        }
+
+        let fixedCount = 0;
+        for(let i=1; i<=3; i++) {
+            let h = getInputValue('hp'+i), q = getInputValue('qty'+i);
+            let type = document.getElementById('acType'+i).value;
+            if(q > 0 &&!isNaN(h) &&!isNaN(q)) {
+                let s = getACSpecs(h, type);
+                for(let j=0; j<q; j++) {
+                    let df = fixedCount < 2? 1.0 : 0.25;
+                    queueCct(1, 1, (h*HP_TO_WATT)/acEff, `AC ${h}HP ${type.toUpperCase()}`, s.mcb, s.cable, s.val, type, df, s.curve);
+                    if(type === "dol" && h >= 2.0) {
+                        motorStartWarnings.push(`AC ${h}HP DOL: Starting current ~${(h*HP_TO_WATT/acEff/VOLT_1PH*6).toFixed(0)}A. May cause voltage dip. Consider MCB Type D.`);
+                    }
+                    fixedCount++;
+                }
+            }
+        }
+        if(getInputValue('qWH') > 0) {
+            for(let j=0; j<getInputValue('qWH'); j++) {
+                let df = fixedCount < 2? 1.0 : 0.25;
+                queueCct(1, 1, getInputValue('wWH'), "Water Heater", "20A", "4.0mm²", 4.0, "wh", df);
+                fixedCount++;
+            }
+        }
+
+        allCircuits.forEach(cct => {
+            cct.weight = cct.watt;
+            if(cct.type === "dol") cct.weight = cct.watt * 6;
+        });
+        allCircuits.sort((a, b) => b.weight - a.weight);
+
+        allCircuits.forEach(cct => {
+            if (phase === 1) {
+                cct.phase = 'R';
+                phaseLoads['R'] += cct.watt;
+            } else {
+                let minImbalance = Infinity;
+                let bestPhase = 'R';
+                ['R','Y','B'].forEach(p => {
+                    let tempLoads = {...phaseLoads};
+                    tempLoads[p] += cct.watt;
+                    let max = Math.max(tempLoads.R, tempLoads.Y, tempLoads.B);
+                    let min = Math.min(tempLoads.R, tempLoads.Y, tempLoads.B);
+                    let imbalance = max - min;
+                    if (imbalance < minImbalance) {
+                        minImbalance = imbalance;
+                        bestPhase = p;
+                    }
+                });
+                phaseLoads[bestPhase] += cct.watt;
+                cct.phase = bestPhase;
+                if(cct.type === "socket") socketRCDTracker[bestPhase]++;
+            }
+        });
+
+        let maxPhaseMD;
+        if (phase === 1) {
+            maxPhaseMD = phaseLoads['R'];
+        } else {
+            maxPhaseMD = Math.max(phaseLoads.R, phaseLoads.Y, phaseLoads.B);
+        }
+        
+        const iMain = maxPhaseMD / (VOLT_1PH * globalPF);
+        let neutralI = 0;
+        if (phase === 1) {
+             neutralI = iMain;
+        } else {
+             const IR = phaseLoads.R / (VOLT_1PH * globalPF);
+             const IY = phaseLoads.Y / (VOLT_1PH * globalPF);
+             const IB = phaseLoads.B / (VOLT_1PH * globalPF);
+             neutralI = Math.sqrt(IR*IR + IY*IY + IB*IB - IR*IY - IY*IB - IB*IR);
+        }
+        
+        let targetMainBreak = iMain * 1.25;
+        if(harmonicPct > 0.33) {
+            targetMainBreak = Math.max(targetMainBreak, neutralI * 1.45);
+        }
+
+        const mainS = breakers.find(b => b >= targetMainBreak) || 125;
+
+        const mainCableChoices = [10, 16, 25, 35, 50];
+        let mainCab = 16;
+        for (let size of mainCableChoices) {
+            let iz_m = (phase===1? mvAM_1ph:mvAM_3ph)[size.toFixed(1)] || 25; 
+            if (iz_m >= mainS) { mainCab = size; break; }
+        }
+
+        const earthCabChoices = [6, 10, 16, 25, 25];
+        let earthCab = 10;
+        let foundEarth = false;
+        for(let i=0; i<mainCableChoices.length; i++) {
+            if(mainCableChoices[i] >= mainCab) { earthCab = earthCabChoices[i]; foundEarth = true; break;}
+        }
+        if(!foundEarth) earthCab = 16;
+
+        globalCalcData = { mainS, mainCab, earthCab, dbSchedule: allCircuits };
+
+        const cLenMain = getInputValue('cLenMain');
+        const cLen = getInputValue('cLen');
+
+        let isRing = false;
+        const mainVdRes = getVdLine(maxPhaseMD, mainCab, cLenMain, false, false);
+        const vDropMain = parseFloat(mainVdRes.v);
+        const vDropPctMain = parseFloat(mainVdRes.pct);
+
+        let outText = `===== PRELIMINARY ELECTRICAL DESIGN REPORT =====\n\n`;
+        outText += `--- SYSTEM LOAD CALCULATION ---\n`;
+        outText += `Total Connected Load (TCL) : ${tcl.toFixed(2)} W\n`;
+        outText += `Maximum Demand (MD)        : ${MD.toFixed(2)} W\n`;
+        outText += `Diversity Factor Applied   : ${autoDF}\n`;
+        outText += `Est. Total IB (per phase)  : ${iMain.toFixed(2)} A\n`;
+        if (phase === 3) outText += `Est. Neutral Current (Unbalanced) : ${neutralI.toFixed(2)} A\n`;
+        outText += `Target Main MCCB/Switch    : ${targetMainBreak.toFixed(2)} A -> Recommend: ${mainS}A\n`;
+        outText += `Recommend Main Cable Size  : ${mainCab}mm² (Iz > ${mainS}A)\n`;
+        outText += `Recommend Earth Conductor  : ${earthCab}mm²\n`;
+        outText += `Main Cable V.Drop Est.     : ${vDropMain.toFixed(2)} V (${vDropPctMain.toFixed(2)}%)\n\n`;
+
+        let balancingReport = "";
+        if (phase === 3) {
+            balancingReport += `--- 3-PHASE LOAD BALANCING ---\n`;
+            ['R','Y','B'].forEach(p => { balancingReport += `Phase ${p} MD : ${phaseLoads[p].toFixed(2)} W\n`; });
+            const avg = (phaseLoads.R + phaseLoads.Y + phaseLoads.B) / 3;
+            const diff = Math.max(Math.abs(phaseLoads.R-avg), Math.abs(phaseLoads.Y-avg), Math.abs(phaseLoads.B-avg));
+            const imbPct = (diff / avg) * 100;
+            balancingReport += `Max Imbalance : ${imbPct.toFixed(2)}% ${imbPct > 15 ? "<span class='vd-fail'>(WARNING: >15% ST Limit)</span>" : "<span class='validation-pass' style='display:inline;padding:2px;'>(OK)</span>"}\n\n`;
+            outText += balancingReport;
+        }
+
+        let motorReport = "";
+        if (motorStartWarnings.length > 0) {
+            motorReport += `--- MOTOR STARTING ALERTS ---\n`;
+            motorStartWarnings.forEach(w => motorReport += `- ${w}\n`);
+            motorReport += "\n";
+            outText += motorReport;
+        }
+
+        outText += `--- DISTRIBUTION BOARD SCHEDULE & VALIDATION ---\n`;
+        let dbScheduleHTML = `<div class="kw-highlight">DB WAY SCHEDULE & PROTECTION STATUS</div>\n`;
+        let circuitLines = "";
+        let dbLayoutHTML = `<div class="db-layout">\n`;
+        let dbLayoutText = "";
+        
+        let allValid = true;
+
+        const mainZ = resCu[mainCab.toFixed(1)] || 1.15;
+        const ZsMain = (mainZ * cLenMain * 2) / 1000;
+        
+        const baseKAV = getInputValue('tnbFault'); 
+
+        allCircuits.forEach((cct, idx) => {
+            const numMcb = parseFloat(cct.mcb);
+            let isRing = cct.mcb.includes("Ring");
+            const vdObj = getVdLine(cct.fullWatt / cct.qty, cct.cableVal, cLen, isRing, cct.label.includes("Water Heater"));
+            const cumVdPct = vDropPctMain + parseFloat(vdObj.pct);
+            const cableChk = checkCableAdequacy(cct.cableVal, vdObj.i);
+
+            let vdClass = "validation-pass";
+            let vdStatus = "OK";
+            if (cumVdPct > 4.0) {
+                vdClass = "vd-fail";
+                vdStatus = "FAIL (Voltage Drop > 4% Limit. Increase cable size or reduce length)";
+                allValid = false;
+            }
+
+            const activeCurve = cct.curve || mcbCurve;
+            const maxZs = zsTable[activeCurve] ? zsTable[activeCurve][numMcb] : 1.0;
+            const cctZ = resCu[cct.cableVal.toFixed(1)] || 3.08;
+            const ZsFinal = ZsMain + ((cctZ * cLen * 2)/1000);
+
+            let cont = getContainmentSizing(cct.cableVal, wStyle);
+
+            const iFault = VOLT_1PH / (ZsFinal + 0.35); 
+            const circuitKA = iFault > 6000? "10kA" : "6kA";
+
+            let rcdNote = "";
+            if (cct.label.includes("Water Heater")) rcdNote = "RCD 10mA";
+            else if (cct.label.includes("Socket") || cct.label.includes("Outdoor")) rcdNote = "RCD 30mA";
+            else rcdNote = "RCD 100mA (or None if TN-S)";
+
+            if(protectionMode === "rcbo") {
+                 rcdNote = "RCBO Built-in";
+            }
+
+            const phaseInfo = phase === 3 ? ` | Phase: ${cct.phase}` : "";
+            
+            circuitLines += `${cct.label}\n - Total Load: ${(cct.fullWatt).toFixed(0)}W | Qty: ${cct.qty.toFixed(0)}\n - ${protectionMode === "rcbo"? "RCBO" : "MCB"}: ${cct.mcb} (${cct.curve || mcbCurve}/${circuitKA}) | Cable: ${cct.cable} | RCD: ${rcdNote}${phaseInfo}\n - Est. Ib: ${vdObj.i}A | Iz: ${cableChk.Iz}A (${cableChk.method}) | Status: ${cableChk.status}\n - Circuit VD: ${vdObj.v}V (${vdObj.pct}%) | Main VD: ${vDropMain.toFixed(2)}V (${vDropPctMain.toFixed(2)}%)\n - <b>Total VD: <span class="${vdClass}">${cumVdPct.toFixed(2)}%</span> - ${vdStatus}</b>\n${cont?`   ${cont}\n`:''}\n`;
+
+            const phaseClass = phase === 3 ? cct.phase.toLowerCase() : "";
+            const phaseDisplay = phase === 3 ? `<br>${cct.phase}` : "";
+            dbLayoutHTML += `<div class="db-way ${phaseClass}">Way ${idx+1}${phaseDisplay}<br>${cct.mcb}</div>\n`;
+            
+            const phaseText = phase === 3 ? ` [Phase ${cct.phase}]` : "";
+            dbLayoutText += `Way ${idx+1}${phaseText} : ${cct.mcb} - ${cct.label}\n`;
+
+            const phaseName = cct.phase === 'R'? 'Red Phase' : cct.phase === 'Y'? 'Yellow Phase' : 'Blue Phase';
+            if(idx === 0 || cct.phase !== allCircuits[idx-1].phase) {
+                if(phase === 3) dbScheduleHTML += `\n Phase: ${phaseName}\n`;
+            }
+            dbScheduleHTML += ` Way ${idx+1}: ${cct.label.padEnd(20)} [${cct.mcb.padEnd(10)}] [${cct.cable.padEnd(6)}] ${protectionMode === "rcbo"? "RCBO" : rcdNote}\n`;
+
+            dbScheduleData.push([
+                idx + 1,
+                cct.label.substring(0,15),
+                `${cct.mcb} ${cct.curve || mcbCurve}`,
+                cct.cable,
+                protectionMode === "rcbo"? "RCBO" : rcdNote,
+                phase === 3 ? cct.phase : "-",
+                circuitKA,
+                cumVdPct.toFixed(2)+'%'
+            ]);
+        });
+
+        const totalWaysReq = allCircuits.length;
+        const standardBoards = [12, 18, 24, 36, 48, 60, 72];
+        let boardSize = standardBoards.find(s => s >= (totalWaysReq * 1.2)) || totalWaysReq + 10;
+        outText += `\nRecommended DB Size: ${boardSize} Ways (Allows ~20% spare capacity)\n\n`;
+
+        for(let i=allCircuits.length; i<boardSize; i++) {
+            dbLayoutHTML += `<div class="db-way spare">Way ${i+1}<br>SPARE</div>\n`;
+        }
+        dbLayoutHTML += `</div>`;
+
+        outText += circuitLines;
+        outText += `\n--- PRELIMINARY PRICING ESTIMATION (BOM BASED) ---\n`;
+        const qL=getInputValue('qL'), qEF=getInputValue('qEF'), qS=getInputValue('qS'), qWH=getInputValue('qWH'), qOL=getInputValue('qOL');
+        const qF = getInputValue('qF'); 
+        const rateL=getInputValue('rateL'), rateEF=getInputValue('rateEF'), rateS=getInputValue('rateS'), rateAC=getInputValue('rateAC'), rateWH=getInputValue('rateWH'), rateOL=getInputValue('rateOL'), rateDB=getInputValue('rateDB');
+        const sumL = (qL+qF)*rateL;
+        const sumEF = qEF*rateEF;
+        const sumS = qS*rateS;
+        const sumAC = acQty*rateAC;
+        const sumWH = qWH*rateWH;
+        const sumOL = qOL*rateOL;
+        const estTotal = sumL+sumEF+sumS+sumAC+sumWH+sumOL+rateDB;
+        
+        outText += `Lighting/Fan Pt : ${qL+qF} x RM${rateL} = RM${sumL}\n`;
+        outText += `Exhaust Fan Pt  : ${qEF} x RM${rateEF} = RM${sumEF}\n`;
+        outText += `Socket Pt       : ${qS} x RM${rateS} = RM${sumS}\n`;
+        outText += `Aircond Pt      : ${acQty} x RM${rateAC} = RM${sumAC}\n`;
+        outText += `Water Heater Pt : ${qWH} x RM${rateWH} = RM${sumWH}\n`;
+        outText += `Outdoor Light Pt: ${qOL} x RM${rateOL} = RM${sumOL}\n`;
+        outText += `DB Install/Base : RM${rateDB}\n`;
+        outText += `-------------------------------------------------\n`;
+        outText += `TOTAL ESTIMATED WIRING COST: RM${estTotal.toFixed(2)}\n`;
+        outText += `(Note: Costs are estimates and vary by region/contractor)\n\n`;
+
+        document.getElementById('out').innerHTML = outText;
+        document.getElementById('out').style.display = 'block';
+        
+        document.getElementById('dbScheduleTable').innerHTML = dbScheduleHTML;
+        document.getElementById('dbScheduleTable').style.display = 'block';
+
+        document.getElementById('dbLayoutPreview').innerHTML = `<h3 style="color:var(--pro); border-color:var(--pro)">DB Front View Layout</h3>` + dbLayoutHTML;
+        document.getElementById('dbLayoutPreview').style.display = 'block';
+
+        generateBOM();
+        let bomHTML = `<h3 style="color:var(--pro); border-color:var(--pro)">Bill of Materials (BOM) Estimate</h3><table class="bom-table"><tr><th>Item Description</th><th>Qty</th><th>Unit</th></tr>`;
+        bomData.forEach(r => bomHTML += `<tr><td>${r.item}</td><td>${r.qty}</td><td>${r.unit}</td></tr>`);
+        bomHTML += `</table>`;
+        document.getElementById('bomTable').innerHTML = bomHTML;
+        document.getElementById('bomTable').style.display = 'block';
+
+        generateSLD(phase, mainS, dbBrand, tcl, MD, targetMainBreak, vDropPctMain);
+
+        document.getElementById('pdfBtn').style.display = 'block';
+        document.getElementById('sldPdfBtn').style.display = 'block';
+
+    } catch (e) {
+        alert("An error occurred during calculation. Please check your inputs. " + e.message);
+        console.error(e);
+    }
+}
+
+function generateSLD(phase, mainS, dbBrand, tcl, MD, ib, mainVdPct) {
+    const sldEl = document.getElementById('sldPreview');
+    let sld = `                    +-----------------------------+\n`;
+    sld += `                    |        TNB INCOMING         |\n`;
+    sld += `                    +--------------+--------------+\n`;
+    sld += `                                   |\n`;
+    sld += `                                   | ${globalCalcData.mainCab}mm² PVC/PVC\n`;
+    sld += `                                   V\n`;
+    sld += `                    +--------------+--------------+\n`;
+    sld += `                    | KWH METER (${phase===3?'3-PHASE':'1-PHASE'})        |\n`;
+    sld += `                    +--------------+--------------+\n`;
+    sld += `                                   |\n`;
+    sld += `                                   | ${globalCalcData.mainCab}mm² PVC/PVC\n`;
+    sld += `                                   V\n`;
+    sld += `========================================================================\n`;
+    sld += ` DISTRIBUTION BOARD: ${dbBrand} (${globalCalcData.dbSchedule.length} WAYS ACTIVE)\n`;
+    sld += `========================================================================\n`;
+    sld += `MAIN SWITCH : ${mainS}A ${phase===3?'TPN':'DP'}\n`;
+    sld += `MAIN RCD    : ${mainS}A/100mA Type S ${phase===3?'4P':'2P'}\n`;
+    sld += `TCL         : ${(tcl/1000).toFixed(2)} kW\n`;
+    sld += `MD          : ${(MD/1000).toFixed(2)} kW\n`;
+    sld += `Est. Ib     : ${ib.toFixed(2)} A\n`;
+    sld += `Main V.Drop : ${mainVdPct.toFixed(2)} %\n`;
+    sld += `Earth       : ${globalCalcData.earthCab}mm² to Earth Electrode\n`;
+    sld += `------------------------------------------------------------------------\n`;
+    sld += ` WAY | MCB        | CABLE   | RCD/RCBO | LOAD DESCRIPTION\n`;
+    sld += `------------------------------------------------------------------------\n`;
+
+    const protectionMode = document.getElementById('protectionMode').value;
+
+    globalCalcData.dbSchedule.forEach((cct, idx) => {
+        let way = (idx+1).toString().padStart(3, '0');
+        let mcbStr = `${cct.mcb} ${cct.curve||'C'}`.padEnd(10, ' ');
+        let cabStr = cct.cable.padEnd(7, ' ');
+        let rcdStr = "100mA";
+        if(protectionMode === "rcbo") rcdStr = "RCBO";
+        else if (cct.label.includes("Water Heater")) rcdStr = "10mA ";
+        else if (cct.label.includes("Socket") || cct.label.includes("Outdoor")) rcdStr = "30mA ";
+        rcdStr = rcdStr.padEnd(8, ' ');
+        
+        let pLbl = (phase === 3) ? `(${cct.phase}) ` : "";
+        sld += ` ${way} | ${mcbStr} | ${cabStr} | ${rcdStr} | ${pLbl}${cct.label}\n`;
+        sld += `     |            |         |          | -> ${cct.qty.toFixed(0)}x (${(cct.watt/cct.qty).toFixed(0)}W)\n`;
+    });
+    
+    sld += `========================================================================\n`;
+    sld += `                  END OF SCHEMATIC\n`;
+    
+    sldEl.innerText = sld;
+    sldEl.style.display = 'block';
+    window.currentSLD = sld;
+}
+
+async function exportSLDPdf() {
+    if (!window.currentSLD) return alert("Please generate the report first!");
+    
+    const sldElement = document.getElementById('sldPreview');
+    
+    const originalBg = sldElement.style.background;
+    const originalBorder = sldElement.style.border;
+    const originalColor = sldElement.style.color;
+    
+    sldElement.style.background = '#ffffff';
+    sldElement.style.color = '#000000';
+    sldElement.style.border = 'none';
+
+    html2canvas(sldElement, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+        sldElement.style.background = originalBg;
+        sldElement.style.color = originalColor;
+        sldElement.style.border = originalBorder;
+
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        let doc = new jsPDF('p', 'mm', 'a4');
+
+        doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+        doc.text("SINGLE LINE DIAGRAM (SLD) - SCHEMATIC", 15, 20);
+        doc.setLineWidth(0.5); doc.line(15, 22, 195, 22);
+
+        const imgWidth = 180;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const pageHeight = 297;
+        const usableHeight = 240;
+        
+        let positionY = 30;
+        doc.addImage(imgData, 'PNG', 15, positionY, imgWidth, imgHeight);
+        let heightLeft = imgHeight - usableHeight;
+
+        while (heightLeft > 0) {
+            doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(100, 100, 100);
+            doc.text("--- Continue to next page ---", 105, 285, {align: "center"});
+            
+            doc.addPage();
+            positionY -= usableHeight;
+            
+            doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(0, 0, 0);
+            doc.text("SINGLE LINE DIAGRAM (SLD) - SCHEMATIC (CONT.)", 15, 20);
+            doc.setLineWidth(0.5); doc.line(15, 22, 195, 22);
+            
+            doc.addImage(imgData, 'PNG', 15, positionY, imgWidth, imgHeight);
+            heightLeft -= usableHeight;
+        }
+
+        let currentY = positionY + imgHeight + 10;
+        if (currentY > 270) {
+            doc.addPage();
+            currentY = 20;
+        }
+
+        doc.setLineWidth(0.2); doc.line(15, currentY - 5, 195, currentY - 5);
+        doc.setFont("helvetica", "bolditalic"); doc.setFontSize(7.5); doc.setTextColor(239, 68, 68);
+        const disc = "IMPORTANT LEGAL NOTICE: This schematic diagram is generated for preliminary estimation purposes ONLY. It MUST be verified and formally endorsed by a registered Competent Person (Wireman PW4 or Professional Electrical Engineer) in accordance with the Electricity Regulations 1994 before any physical installation begins.";
+        doc.text(doc.splitTextToSize(disc, 180), 15, currentY);
+        
+        doc.save("VoltMaster_v1.8.16_SLD_PRO.pdf");
+    });
+}
+
+function pdf() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const cName = document.getElementById('compName').value || "Volt Solutions";
+    const pBy = document.getElementById('prepBy').value || "Firdaus";
+    const pRef = document.getElementById('projRef').value || "N/A";
+    const date = new Date().toLocaleDateString('en-GB');
+
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.setTextColor(0, 0, 0);
+    doc.text("ELECTRICAL PRELIMINARY DESIGN REPORT", 105, 15, { align: "center" });
+    
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    doc.text(`Company: ${cName}`, 15, 25);
+    doc.text(`Prepared By: ${pBy}`, 15, 30);
+    doc.text(`Ref: ${pRef}`, 150, 25);
+    doc.text(`Date: ${date}`, 150, 30);
+    doc.line(15, 33, 195, 33);
+
+    const txt = document.getElementById('out').innerText;
+    let y = 40;
+    const lines = doc.splitTextToSize(txt, 180);
+    
+    lines.forEach(line => {
+        if (y > 280) { doc.addPage(); y = 20; }
+        if (line.includes("FAIL") || line.includes("WARNING")) doc.setTextColor(255, 0, 0);
+        else if (line.includes("OK") && !line.includes("LOOK")) doc.setTextColor(0, 150, 0);
+        else doc.setTextColor(0, 0, 0);
+        
+        doc.text(line, 15, y);
+        y += 5;
+    });
+
+    if (dbScheduleData.length > 0) {
+        doc.addPage();
+        doc.setFont("helvetica", "bold"); doc.setTextColor(0, 0, 0);
+        doc.text("DISTRIBUTION BOARD SCHEDULE", 105, 20, { align: "center" });
+        
+        doc.autoTable({
+            startY: 25,
+            head: [['Way', 'Circuit', 'MCB', 'Cable', 'RCD', 'Phase', 'kA', 'Cum VD%']],
+            body: dbScheduleData,
+            theme: 'grid',
+            headStyles: { fillColor: [30, 41, 59] },
+            styles: { fontSize: 8 }
+        });
+    }
+
+    if (bomData.length > 0) {
+        doc.addPage();
+        doc.setFont("helvetica", "bold"); doc.setTextColor(0, 0, 0);
+        doc.text("BILL OF MATERIALS (BOM) ESTIMATE", 105, 20, { align: "center" });
+        
+        doc.autoTable({
+            startY: 25,
+            head: [['Item Description', 'Qty', 'Unit']],
+            body: bomData.map(r => [r.item, r.qty, r.unit]),
+            theme: 'grid',
+            headStyles: { fillColor: [34, 197, 94] },
+            styles: { fontSize: 9 }
+        });
+    }
+
+    doc.addPage();
+    doc.setFont("helvetica", "bold"); doc.setTextColor(0, 0, 0);
+    doc.text("LEGAL DISCLAIMER & COMPLIANCE NOTICE", 105, 20, { align: "center" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    const disc = "This report is generated by VOLTMASTER PRO v1.8.16. The calculations provided are for preliminary design and estimation purposes only, based on simplified assumptions from MS 1979, BS 7671, and MS IEC 60364. \n\n1. It DOES NOT constitute an official engineering endorsement or certified design drawing.\n2. Final cable sizing, breaker selection, and layout must be verified by a registered Competent Person (Wireman PW4 or Professional Electrical Engineer) prior to construction.\n3. Short circuit and Zs calculations are theoretical and exclude local transformer impedance and supplier network constraints.\n4. The software developer accepts no legal liability for any damages, faults, or incidents arising from the direct use of these preliminary figures.";
+    const discLines = doc.splitTextToSize(disc, 180);
+    doc.text(discLines, 15, 30);
+
+    doc.save("VoltMaster_PRO_Report.pdf");
+}
+
+function resetBorang() {
+    if(confirm("Are you sure you want to start a new project? All current inputs will be lost.")) {
+        document.querySelectorAll('input[type="number"]').forEach(i => i.value = i.defaultValue);
+        document.getElementById('out').style.display = 'none';
+        document.getElementById('dbScheduleTable').style.display = 'none';
+        document.getElementById('dbLayoutPreview').style.display = 'none';
+        document.getElementById('bomTable').style.display = 'none';
+        document.getElementById('sldPreview').style.display = 'none';
+        document.getElementById('pdfBtn').style.display = 'none';
+        document.getElementById('sldPdfBtn').style.display = 'none';
+        validateInput();
+    }
+}
+
+window.onload = () => validateInput();
+</script>
+</body>
+</html>
